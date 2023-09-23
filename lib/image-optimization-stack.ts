@@ -29,6 +29,9 @@ var S3_TRANSFORMED_IMAGE_CACHE_TTL = 'max-age=31622400';
 var LAMBDA_MEMORY = '1500';
 var LAMBDA_TIMEOUT = '60';
 var LOG_TIMING = 'false';
+// Max image size. If generated images are stored on S3, bigger images are generated, stored on S3
+// and request is redirect to the generated image. Otherwise, an application error is sent.
+var MAX_IMAGE_SIZE = 44;
 
 type ImageDeliveryCacheBehaviorConfig = {
   origin: any;
@@ -44,6 +47,7 @@ type LambdaEnv = {
   transformedImageCacheTTL: string,
   secretKey: string,
   logTiming: string,
+  maxImageSize: string,
 }
 
 export class ImageOptimizationStack extends Stack {
@@ -60,6 +64,7 @@ export class ImageOptimizationStack extends Stack {
     LAMBDA_MEMORY = this.node.tryGetContext('LAMBDA_MEMORY') || LAMBDA_MEMORY;
     LAMBDA_TIMEOUT = this.node.tryGetContext('LAMBDA_TIMEOUT') || LAMBDA_TIMEOUT;
     LOG_TIMING = this.node.tryGetContext('LOG_TIMING') || LOG_TIMING;
+    MAX_IMAGE_SIZE = this.node.tryGetContext('MAX_IMAGE_SIZE') || MAX_IMAGE_SIZE;
 
     // Create secret key to be used between CloudFront and Lambda URL for access control
     const SECRET_KEY = createHash('md5').update(this.node.addr).digest('hex');
@@ -137,6 +142,7 @@ export class ImageOptimizationStack extends Stack {
       transformedImageCacheTTL: S3_TRANSFORMED_IMAGE_CACHE_TTL,
       secretKey: SECRET_KEY,
       logTiming: LOG_TIMING,
+      maxImageSize: MAX_IMAGE_SIZE,
     };
     if (transformedImageBucket) lambdaEnv.transformedImageBucketName = transformedImageBucket.bucketName;
 
