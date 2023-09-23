@@ -11,6 +11,7 @@ const S3_TRANSFORMED_IMAGE_BUCKET = process.env.transformedImageBucketName;
 const TRANSFORMED_IMAGE_CACHE_TTL = process.env.transformedImageCacheTTL;
 const SECRET_KEY = process.env.secretKey;
 const LOG_TIMING = process.env.logTiming;
+const MAX_IMAGE_SIZE = process.env.maxImageSize;
 
 exports.handler = async (event) => {
     // First validate if the request is coming from CloudFront
@@ -89,9 +90,24 @@ exports.handler = async (event) => {
         } catch (error) {
             sendError('APPLICATION ERROR', 'Could not upload transformed image to S3', error);
         }
+        // If the generated image file is bigger than a certain limit (e.g. Lambda output object limit)
+        // then send a redirection to the generated image on S3, instead of serving it from Lambda
+        if (Buffer.byteLength(transformedImage) > MAX_IMAGE_SIZE) {
+            return {
+                statusCode: 302,
+                headers: {
+                    'Location': '/' + originalImagePath + '?' + operationsPrefix.replace(/,/g, "&"),
+                    'Cache-Control' : 'private,no-store'
+                }
+            };
+        }
     }
     timingLog = timingLog + parseInt(performance.now() - startTime) + ' ';
     if (LOG_TIMING === 'true') console.log(timingLog);
+    // Verify image size 
+    if (Buffer.byteLength(transformedImage) > MAX_IMAGE_SIZE) {
+        sendError('APPLICATION ERROR', 'Generated image is too big', error);
+    }
     // return transformed image
     return {
         statusCode: 200,
