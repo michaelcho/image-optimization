@@ -11,7 +11,7 @@ const S3_TRANSFORMED_IMAGE_BUCKET = process.env.transformedImageBucketName;
 const TRANSFORMED_IMAGE_CACHE_TTL = process.env.transformedImageCacheTTL;
 const SECRET_KEY = process.env.secretKey;
 const LOG_TIMING = process.env.logTiming;
-const MAX_IMAGE_SIZE = process.env.maxImageSize;
+const MAX_IMAGE_SIZE = parseInt(process.env.maxImageSize);
 
 exports.handler = async (event) => {
     // First validate if the request is coming from CloudFront
